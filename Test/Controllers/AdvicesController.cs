@@ -9,7 +9,7 @@ using Test.Repositories;
 namespace Test.Controllers
 {
     [ApiController]
-    [Route("advices")]
+    [Route("GiveMeAdvice")]
     public class AdvicesController : ControllerBase
     {
         
