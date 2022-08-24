@@ -31,47 +31,54 @@ namespace Test.Repositories
             }
     
 
-    public async Task<Advices> GetAdvices(string topic, int? amount)
+       public async Task<Advices> GetAdvices(string topic, int? amount)
     {
           HttpClient httpClient = new HttpClient(); 
           Advices result = new Advices();
           AdviceDTO advices = new AdviceDTO();
 
-                
-           var key = topic;
-           var valoreCachato = await _cache.GetAsync(key);
-           if (valoreCachato != null)
+            try
            {
-                advices = JsonConvert.DeserializeObject<AdviceDTO>(Encoding.UTF8.GetString(valoreCachato));
-                
-           }
-           else
-           {
-            var response = httpClient.GetAsync($"https://api.adviceslip.com/advice/search/{topic}").Result;
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var contentStream = response.Content.ReadAsStringAsync().Result;
-                await SetDataToCache(topic, contentStream);               
-                advices = JsonConvert.DeserializeObject<AdviceDTO>(contentStream);                    
-                                                                 
-            }
-           }
-            if (advices.total_results > 0)
-                { 
-                var maxResults = amount >= 0 && amount <= advices.slips.Length ? amount : advices.slips.Length ;
-                result.adviceList = advices.slips.Where(x =>Array.IndexOf(advices.slips,x) <  maxResults).Select( x => {
-                    while (advices.slips.Length < maxResults)
+                var key = topic;
+                var valoreCachato = await _cache.GetAsync(key);
+                if (valoreCachato != null)
+                {
+                        advices = JsonConvert.DeserializeObject<AdviceDTO>(Encoding.UTF8.GetString(valoreCachato));
+                        
+                }
+                else
+                {
+                    var response = httpClient.GetAsync($"https://api.adviceslip.com/advice/search/{topic}").Result;
+                    
+                    if (response.IsSuccessStatusCode)
                     {
-                      x = advices.slips.ElementAt(Array.IndexOf(advices.slips,x));
+                        var contentStream = response.Content.ReadAsStringAsync().Result;
+                        await SetDataToCache(topic, contentStream);               
+                        advices = JsonConvert.DeserializeObject<AdviceDTO>(contentStream);                    
+                                                                        
                     }
-                      return x.advice;          
-                    }).ToArray();
-                }  
+                }
+                    if (advices.total_results > 0)
+                        { 
+                        var maxResults = amount >= 0 && amount <= advices.slips.Length ? amount : advices.slips.Length ;
+                        result.adviceList = advices.slips.Where(x =>Array.IndexOf(advices.slips,x) <  maxResults).Select( x => {
+                            while (advices.slips.Length < maxResults)
+                            {
+                            x = advices.slips.ElementAt(Array.IndexOf(advices.slips,x));
+                            }
+                            return x.advice;          
+                            }).ToArray();
+                        }  
+                
+                
+                    
+                    return result;     
+            } 
+            catch(Exception ex)
+            {
+                throw new Exception ($"errore durante il recupero degli advice per il topic selezionato:  {ex.Message}");
+            }   
          
-         
-            
-              return result;     
     }
 
 }
